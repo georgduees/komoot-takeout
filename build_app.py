@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import platform
 import argparse
+import tempfile
 
 
 def parse_args():
@@ -28,9 +29,14 @@ def parse_args():
 
 
 def clean_previous_builds():
-    for artifact in ("dist", "build", "komoot-takeout.spec"):
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    for artifact in (
+        os.path.join(project_root, "dist"),
+        os.path.join(project_root, "build"),
+        os.path.join(project_root, "komoot-takeout.spec"),
+    ):
         if os.path.exists(artifact):
-            print(f"Cleaning {artifact}...")
+            print(f"Cleaning {os.path.relpath(artifact, project_root)}...")
             if os.path.isdir(artifact):
                 shutil.rmtree(artifact)
             else:
@@ -48,7 +54,7 @@ def maybe_create_macos_zip(dist_executable, arch):
         return
 
     zip_name = f"komoot-takeout-macos-{arch}.zip"
-    zip_path = os.path.join("dist", zip_name)
+    zip_path = os.path.join(os.path.dirname(dist_executable), zip_name)
     if os.path.exists(zip_path):
         os.remove(zip_path)
 
@@ -59,6 +65,13 @@ def maybe_create_macos_zip(dist_executable, arch):
 def main():
     """Build the application with PyInstaller"""
     args = parse_args()
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    dist_dir = os.path.join(project_root, 'dist')
+    build_dir = os.path.join(project_root, 'build')
+    spec_dir = project_root
+    entry_script = os.path.join(project_root, 'pywebview_app.py')
+    index_template = os.path.join(project_root, 'templates', 'index.html')
+
     print("Building komoot-takeout with PyInstaller...")
 
     clean_previous_builds()
@@ -71,13 +84,19 @@ def main():
     
     # Build command
     cmd = [
-        'pyinstaller',
+        sys.executable,
+        '-m',
+        'PyInstaller',
         '--noconfirm',
         '--clean',
+        f'--distpath={dist_dir}',
+        f'--workpath={build_dir}',
+        f'--specpath={spec_dir}',
+        f'--paths={project_root}',
         '--name=komoot-takeout',
         '--onefile', 
         '--windowed',
-        f'--add-data=templates/index.html{separator}templates',
+        f'--add-data={index_template}{separator}templates',
         '--hidden-import=flask',
         '--hidden-import=komoot_adapter',
         '--hidden-import=bs4',
@@ -87,7 +106,7 @@ def main():
         '--hidden-import=zipfile',
         '--hidden-import=concurrent.futures',
         '--hidden-import=komootgpx',
-        'pywebview_app.py'
+        entry_script
     ]
 
     if platform.system().lower() == 'darwin':
@@ -97,10 +116,11 @@ def main():
     print(f"Running build command...")
     
     # Run PyInstaller
-    subprocess.check_call(cmd)
+    with tempfile.TemporaryDirectory(prefix='komoot-takeout-pyi-') as tmp_cwd:
+        subprocess.check_call(cmd, cwd=tmp_cwd)
 
     executable_name = get_executable_name()
-    dist_executable = os.path.join('dist', executable_name)
+    dist_executable = os.path.join(dist_dir, executable_name)
     if not os.path.exists(dist_executable):
         raise FileNotFoundError(f"Expected executable not found: {dist_executable}")
 
