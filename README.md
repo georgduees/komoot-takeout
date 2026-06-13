@@ -17,9 +17,10 @@ Consider this tool a stop-gap solution created in response to Komoot locking up 
 ## 🖥 Supported Platforms
 
 - **Windows (.exe):** ⬇️ [komoot-takeout.exe ](https://github.com/nevvkid/komoot-takeout/raw/1fb58e052c5b06e9c6c1fac2a3e370ed183ce96e/dist/komoot-takeout.exe)⬇️
-- **macOS (.app):** ⬇️ [komoot-takeout.app(macOS).zip](https://github.com/nevvkid/komoot-takeout/raw/b33521fb8c5da4472e847c451b918125ac5d8a2b/dist/komoot-takeout.app(macOS).zip)⬇️
+- **macOS Intel (x86_64):** build from the GitHub Release asset `komoot-takeout-macos-x86_64.zip`
+- **macOS Apple silicon (arm64):** build from the GitHub Release asset `komoot-takeout-macos-arm64.zip`
 
-Only tested with Windows 11 Pro & macOS 15.x.x (Apple silicon)
+Tested with Windows 11 Pro and macOS 15.x (Apple silicon + Intel builds)
 ---
 
 ![windows 11 - screenshot](windows11-screenshot.png)
@@ -46,6 +47,39 @@ This project builds on the excellent [komootGPX](https://github.com/timschneeb/K
 
 ## 🚀 Contributing
 This tool contains bugs due to being rapidly coded with the help of generative AI. Contributions are welcome. Please open an issue or a pull request. 
+
+## 🧱 Build for macOS Architectures
+
+The build script supports explicit macOS architecture targeting via `--macos-arch`:
+
+```bash
+python build_app.py --macos-arch x86_64
+python build_app.py --macos-arch arm64
+python build_app.py --macos-arch universal2
+```
+
+You can also use an environment variable:
+
+```bash
+MACOS_TARGET_ARCH=x86_64 python build_app.py
+```
+
+On macOS, each build creates:
+
+- `dist/komoot-takeout` (executable)
+- `dist/komoot-takeout-macos-<arch>.zip` (release-ready archive)
+
+## 📦 Release Workflow
+
+GitHub Actions workflow `.github/workflows/release.yml` now builds macOS artifacts for:
+
+- Intel (`x86_64`) on `macos-13`
+- Apple silicon (`arm64`) on `macos-14`
+
+Trigger it either by:
+
+- Creating a tag like `v1.0.0` and pushing it
+- Running **Build and Release** manually from the Actions tab
 
 
 ### Log Files
